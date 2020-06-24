@@ -38,7 +38,7 @@
 #'
 #' @param  recode If TRUE, recodes the exposures - if at least one of the exposures is protective - such that the stratum with the lowest risk becomes the new reference category when the two exposures are considered jointly.
 #'
-#' @return  a list object of class 'interactionR' that includes a dataframe containing all effect estimates necessary for full reporting of effect modification or interaction analysis. @seealso \code{\link{interactionR_table}} for how to generate a publication-ready table with this object.
+#' @return  a list object of class 'interactionR' that includes a dataframe containing all effect estimates necessary for full reporting of effect modification or interaction analysis. @seealso \code{\link{interactionR_table}} for how to generate a publication-ready table from this object.
 #'
 #'
 #' @examples
@@ -101,14 +101,6 @@
 #' ## With this model, calling the function with the default FALSE parameter for
 #' ## the 'recode' argument returns an error
 #' ## And informs the user to set 'recode' to TRUE if they want to automatically recode the variables
-#' \donttest{
-#' interactionR(model.prev,
-#'   exposure_names = c("exp1", "exp2"),
-#'   ci.type = "delta", ci.level = 0.95,
-#'   em = FALSE, recode = FALSE
-#' )
-#' }
-#'
 #' ## Set to TRUE, the function recodes the data and generate estimates
 #' ## for additive interaction measures with the new data which
 #' ## can be examined in the returned list object by the function
@@ -162,6 +154,7 @@ interactionR <- function(model, exposure_names = c(), ci.type = "delta", ci.leve
   b3 <- coef(model)[beta3]
 
 
+  #### Recode section code is adapted from Marthur and Vanderweele 2018 (doi: 10.1097/EDE.0000000000000752) ####
 
   # check if any exposure is preventive
   if (preventive(OR10 = exp(b1), OR01 = exp(b2))) {
@@ -203,6 +196,7 @@ interactionR <- function(model, exposure_names = c(), ci.type = "delta", ci.leve
       b3 <- coef(model)[beta3]
     }
   }
+  #### End of recode section ####
 
   se_vec <- summary(model)$coefficients[, 2] # extracts the SE vector for the coefficients
   # from the model

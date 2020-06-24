@@ -1,12 +1,14 @@
 #' Publication-ready tables for effect modification and interaction analysis
 #'
 #' Generates a publication-ready table for effect modification and interaction analysis based on Tables 1 and 3 in Knol and Vanderweele (2012) [\url{https://doi.org/10.1093/ije/dyr218}].
-#' Users can modify the function's output like any huxtable object @seealso \code{\link[huxtable]{huxtable}}. The confidence intervals for additive interaction measures will be as selected from the \code{\link{interactionR}} function
+#' Users can modify the function's output like any flextable object @seealso \code{\link[flextable]{flextable}}. The confidence intervals for additive interaction measures will be as selected from the \code{\link{interactionR}} function
 #'
 #' @param obj An object of class 'interactionR' generated from any of the main functions in the \code{\link{interactionR}} package
 #'
+#' @param file_path An optional user-specified string representing the file path to save the generated Word table instead of the current working directory
+#'
 #' @return  saves a publication-ready microsoft word Table corresponding to Table 1 or Table 3 respectively in Knol and Vanderweele (2012) to the working directory (with user's permission).
-#' It also returns an object of class huxtable corresponding to the saved table.
+#' It also returns an object of class flextable corresponding to the saved table for further manipulation.
 #'
 #' @examples
 #' library(interactionR)
@@ -26,9 +28,10 @@
 #'
 #' ## Use the tabling function to generate a table
 #' interactionR_table(value)
-#' @import huxtable
+#' @import flextable
+#' @import officer
 #' @export
-interactionR_table <- function(obj) {
+interactionR_table <- function(obj, file_path = NA) {
   if (class(obj) != "interactionR") {
     stop("Argument 'obj' must be an object of class 'interactionR',
              use the interactionR() function to generate such object ")
@@ -59,17 +62,21 @@ interactionR_table <- function(obj) {
     effect_measure <- "OR [95% CI]"
   }
 
+
+
   if (em) {
-    t <- hux(
-      c1 = c(
-        NA, NA, E1.absent, E1.present, "Multiplicative scale",
-        "RERI"
-      ), c2 = c(E2.absent, effect_measure, NA, NA, NA, NA),
-      c3 = c(E2.present, effect_measure, NA, NA, NA, NA), c4 = c(
-        WithinStrataEffect1,
-        effect_measure, NA, NA, NA, NA
-      )
+    t <- data.frame(c(
+      NA, NA, E1.absent, E1.present, "Multiplicative scale",
+      "RERI"
+    ), c(NA, effect_measure, NA, NA, NA, NA),
+    c(NA, effect_measure, NA, NA, NA, NA), c(
+      NA,
+      effect_measure, NA, NA, NA, NA
+    ),
+    stringsAsFactors = FALSE
     )
+    names(t) <- c("*", E2.absent, E2.present, WithinStrataEffect1)
+
     t[3, 2] <- paste("1", "[Reference]", sep = " ")
     t[3, 3] <- paste(d[2, 2], " [", d[2, 3], ", ", d[2, 4], "]", sep = "")
     t[3, 4] <- paste(d[5, 2], " [", d[5, 3], ", ", d[5, 4], "]", sep = "")
@@ -79,25 +86,26 @@ interactionR_table <- function(obj) {
     t[5, 2] <- paste(d[7, 2], " [", d[7, 3], ", ", d[7, 4], "]", sep = "")
     t[6, 2] <- paste(d[8, 2], " [", d[8, 3], ", ", d[8, 4], "]", sep = "")
 
-    caption(t) <- paste("Modification of the effect of", beta2, "by",
-      beta1,
-      sep = " "
-    )
-    t <- theme_article(t)
+
+    t2 <- flextable(t)
+    t2 <- set_caption(t2, paste("Modification of the effect of", beta1, "and", beta2, sep = " "))
   } else {
-    t <- hux(c1 = c(
+    t <- data.frame(c(
       NA, NA, E1.absent, E1.present, WithinStrataEffect2,
       "Multiplicative scale", "RERI", "AP", "SI"
-    ), c2 = c(
-      E2.absent,
+    ), c(
+      NA,
       effect_measure, NA, NA, NA, NA, NA, NA, NA
-    ), c3 = c(
-      E2.present,
+    ), c(
+      NA,
       effect_measure, NA, NA, NA, NA, NA, NA, NA
-    ), c4 = c(
-      WithinStrataEffect1,
+    ), c(
+      NA,
       effect_measure, NA, NA, NA, NA, NA, NA, NA
-    ))
+    ), stringsAsFactors = FALSE)
+
+    names(t) <- c("*", E2.absent, E2.present, WithinStrataEffect1)
+
     t[3, 2] <- paste("1", "[Reference]", sep = " ")
     t[3, 3] <- paste(d[2, 2], " [", d[2, 3], ", ", d[2, 4], "]", sep = "")
     t[3, 4] <- paste(d[5, 2], " [", d[5, 3], ", ", d[5, 4], "]", sep = "")
@@ -116,21 +124,33 @@ interactionR_table <- function(obj) {
     t[9, 2] <- paste(d[12, 2], " [", d[12, 3], ", ", d[12, 4], "]",
       sep = ""
     )
-    caption(t) <- paste("Interaction of", beta1, "and", beta2, sep = " ")
-    t <- theme_article(t)
+
+    t2 <- flextable(t)
+    t2 <- set_caption(t2, paste("Interaction of", beta1, "and", beta2, sep = " "))
   }
-  right_padding(t) <- 10
-  left_padding(t) <- 10
 
-  uprompt <- askYesNo("Do you want to save a Microsoft Word copy of the em/interaction table to your working directory?", default = FALSE)
+  if (!is.na(file_path)) {
+    # checks if user pre-specified a file path
+    path <- paste(file_path, "interaction.docx", sep = "\\")
+    save_as_docx(t2, path = path)
+    print(paste("The file 'interaction_table.docx' has been saved to", file_path, sep = " "))
+    print(t2)
+    invisible(t2)
+  } else {
+    uprompt <- askYesNo("Do you want to save a Microsoft Word copy of the em/interaction table to your working directory?", default = FALSE)
+    # Gets permission from the user to save Word file into the working directory
+    # Default is NO
 
-  if (is.na(uprompt) || !uprompt) {
-    print_screen(t)
-    invisible(t)
-  } else if (uprompt) {
-    quick_docx(t, file = "interaction_table.docx")
-    print(paste("The file 'interaction_table.docx' has been saved to", getwd(), sep = " "))
-    print_screen(t)
-    invisible(t)
+    if (is.na(uprompt) || !uprompt) {
+      # if permission is declined or NA, working directory is untouched
+      print(t2)
+      invisible(t2)
+    } else if (uprompt) {
+      # if permission is given (as Yes), table is saved to working directory and user is informed
+      save_as_docx(t2, path = "interaction_table.docx")
+      print(paste("The file 'interaction_table.docx' has been saved to", getwd(), sep = " "))
+      print(t2)
+      invisible(t2)
+    }
   }
 }
