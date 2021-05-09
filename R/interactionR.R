@@ -2,7 +2,7 @@
 #' Full reporting of effect modification and interaction analysis
 #'
 #' @description
-#' For two binary exposures included in a regression model as an interaction term for a binary outcome, \code{interactionR} returns all effect estimates necessary to fully report effect modification or interaction analysis as recommended by Knol and Vanderweele (2012) [\url{https://doi.org/10.1093/ije/dyr218}]. Estimation of confidence intervals (CI) for measures of additive interaction (RERI, AP, and SI) is based on the delta method described by Hosmer and Lemeshow (1992) [\url{https://doi.org/10.1097/00001648-199209000-00012}] or the variance recovery 'mover' method described by Zou (2008) [\url{https://doi.org/10.1093/aje/kwn104}].
+#' For two binary exposures included in a regression model as an interaction term for a binary outcome, \code{interactionR} returns all effect estimates necessary to fully report effect modification or interaction analysis as recommended by Knol and Vanderweele (2012) [\doi{10.1093/ije/dyr218}]. Estimation of confidence intervals (CI) for measures of additive interaction (RERI, AP, and SI) is based on the delta method described by Hosmer and Lemeshow (1992) [\doi{10.1097/00001648-199209000-00012}] or the variance recovery 'mover' method described by Zou (2008) [\doi{10.1093/aje/kwn104}].
 #'
 #' @details
 #' Effect modification is assessed when the effect of an exposure on an outcome differs within the strata of another exposure, while,
@@ -198,8 +198,16 @@ interactionR <- function(model, exposure_names = c(), ci.type = "delta", ci.leve
   }
   #### End of recode section ####
 
-  se_vec <- summary(model)$coefficients[, 2] # extracts the SE vector for the coefficients
-  # from the model
+  classes <- c("clogit", "coxph")
+  mod_class <- class(model)[1]
+
+  if (mod_class %in% classes) {
+    se_vec <- summary(model)$coefficients[, 3]
+  } else {
+    se_vec <- summary(model)$coefficients[, 2]
+  } # extracts the SE vector for the coefficients from the model
+
+
   v1 <- se_vec[beta1]^2
   v2 <- se_vec[beta2]^2
   v3 <- se_vec[beta3]^2
