@@ -5,6 +5,8 @@
 #'
 #' @param obj An object of class 'interactionR' generated from any of the main functions in the \code{\link{interactionR}} package
 #'
+#' @param p.value Includes p-values in the generated table if set to TRUE. Default is FALSE.
+#'
 #' @param file_path An optional user-specified string representing the file path to save the generated Word table instead of the current working directory
 #'
 #' @return  saves a publication-ready microsoft word Table corresponding to Table 1 or Table 3 respectively in Knol and Vanderweele (2012) to the working directory (with user's permission).
@@ -31,11 +33,12 @@
 #' @import flextable
 #' @import officer
 #' @export
-interactionR_table <- function(obj, file_path = NA) {
+interactionR_table <- function(obj, p.value = FALSE, file_path = NA) {
   if (class(obj) != "interactionR") {
     stop("Argument 'obj' must be an object of class 'interactionR',
              use the interactionR() function to generate such object ")
   }
+
   beta1 <- obj$exp_names[1]
   beta2 <- obj$exp_names[2]
   em <- obj$analysis
@@ -62,71 +65,130 @@ interactionR_table <- function(obj, file_path = NA) {
     effect_measure <- "OR [95% CI]"
   }
 
+  if (p.value) {
+    if (em) {
+      t <- data.frame(c(
+        NA, NA, E1.absent, E1.present, "Multiplicative scale",
+        "RERI"
+      ), c(NA, effect_measure, NA, NA, NA, NA),
+      c(NA, effect_measure, NA, NA, NA, NA), c(
+        NA,
+        effect_measure, NA, NA, NA, NA
+      ),
+      stringsAsFactors = FALSE
+      )
+      names(t) <- c("*", E2.absent, E2.present, WithinStrataEffect1)
+
+      t[3, 2] <- paste("1", "[Reference]", sep = " ")
+      t[3, 3] <- paste(d[2, 2], " [", d[2, 3], ", ", d[2, 4], "]", " p=", d[2, 5], sep = "")
+      t[3, 4] <- paste(d[5, 2], " [", d[5, 3], ", ", d[5, 4], "]", " p=", d[5, 5], sep = "")
+      t[4, 2] <- paste(d[3, 2], " [", d[3, 3], ", ", d[3, 4], "]", " p=", d[3, 5], sep = "")
+      t[4, 3] <- paste(d[4, 2], " [", d[4, 3], ", ", d[4, 4], "]", " p=", d[4, 5], sep = "")
+      t[4, 4] <- paste(d[6, 2], " [", d[6, 3], ", ", d[6, 4], "]", " p=", d[6, 5], sep = "")
+      t[5, 2] <- paste(d[7, 2], " [", d[7, 3], ", ", d[7, 4], "]", " p=", d[7, 5], sep = "")
+      t[6, 2] <- paste(d[8, 2], " [", d[8, 3], ", ", d[8, 4], "]", " p=", d[8, 5], sep = "")
 
 
-  if (em) {
-    t <- data.frame(c(
-      NA, NA, E1.absent, E1.present, "Multiplicative scale",
-      "RERI"
-    ), c(NA, effect_measure, NA, NA, NA, NA),
-    c(NA, effect_measure, NA, NA, NA, NA), c(
-      NA,
-      effect_measure, NA, NA, NA, NA
-    ),
-    stringsAsFactors = FALSE
-    )
-    names(t) <- c("*", E2.absent, E2.present, WithinStrataEffect1)
+      t2 <- flextable(t)
+      t2 <- set_caption(t2, paste("Modification of the effect of", beta1, "and", beta2, sep = " "))
+    } else {
+      t <- data.frame(c(
+        NA, NA, E1.absent, E1.present, WithinStrataEffect2,
+        "Multiplicative scale", "RERI", "AP", "SI"
+      ), c(
+        NA,
+        effect_measure, NA, NA, NA, NA, NA, NA, NA
+      ), c(
+        NA,
+        effect_measure, NA, NA, NA, NA, NA, NA, NA
+      ), c(
+        NA,
+        effect_measure, NA, NA, NA, NA, NA, NA, NA
+      ), stringsAsFactors = FALSE)
 
-    t[3, 2] <- paste("1", "[Reference]", sep = " ")
-    t[3, 3] <- paste(d[2, 2], " [", d[2, 3], ", ", d[2, 4], "]", sep = "")
-    t[3, 4] <- paste(d[5, 2], " [", d[5, 3], ", ", d[5, 4], "]", sep = "")
-    t[4, 2] <- paste(d[3, 2], " [", d[3, 3], ", ", d[3, 4], "]", sep = "")
-    t[4, 3] <- paste(d[4, 2], " [", d[4, 3], ", ", d[4, 4], "]", sep = "")
-    t[4, 4] <- paste(d[6, 2], " [", d[6, 3], ", ", d[6, 4], "]", sep = "")
-    t[5, 2] <- paste(d[7, 2], " [", d[7, 3], ", ", d[7, 4], "]", sep = "")
-    t[6, 2] <- paste(d[8, 2], " [", d[8, 3], ", ", d[8, 4], "]", sep = "")
+      names(t) <- c("*", E2.absent, E2.present, WithinStrataEffect1)
 
-
-    t2 <- flextable(t)
-    t2 <- set_caption(t2, paste("Modification of the effect of", beta1, "and", beta2, sep = " "))
+      t[3, 2] <- paste("1", "[Reference]", sep = " ")
+      t[3, 3] <- paste(d[2, 2], " [", d[2, 3], ", ", d[2, 4], "]", " p=", d[2, 5], sep = "")
+      t[3, 4] <- paste(d[5, 2], " [", d[5, 3], ", ", d[5, 4], "]", " p=", d[5, 5], sep = "")
+      t[4, 2] <- paste(d[3, 2], " [", d[3, 3], ", ", d[3, 4], "]", " p=", d[3, 5], sep = "")
+      t[4, 3] <- paste(d[4, 2], " [", d[4, 3], ", ", d[4, 4], "]", " p=", d[4, 5], sep = "")
+      t[4, 4] <- paste(d[6, 2], " [", d[6, 3], ", ", d[6, 4], "]", " p=", d[6, 5], sep = "")
+      t[5, 2] <- paste(d[7, 2], " [", d[7, 3], ", ", d[7, 4], "]", " p=", d[7, 5], sep = "")
+      t[5, 3] <- paste(d[8, 2], " [", d[8, 3], ", ", d[8, 4], "]", " p=", d[8, 5], sep = "")
+      t[6, 2] <- paste(d[9, 2], " [", d[9, 3], ", ", d[9, 4], "]", " p=", d[9, 5], sep = "")
+      t[7, 2] <- paste(d[10, 2], " [", d[10, 3], ", ", d[10, 4], "]", " p=", d[10, 5], sep = "")
+      t[8, 2] <- paste(d[11, 2], " [", d[11, 3], ", ", d[11, 4], "]", " p=", d[11, 5], sep = "")
+      t[9, 2] <- paste(d[12, 2], " [", d[12, 3], ", ", d[12, 4], "]", " p=", d[12, 5], sep = "")
+      t2 <- flextable(t)
+      t2 <- set_caption(t2, paste("Interaction of", beta1, "and", beta2, sep = " "))
+    }
   } else {
-    t <- data.frame(c(
-      NA, NA, E1.absent, E1.present, WithinStrataEffect2,
-      "Multiplicative scale", "RERI", "AP", "SI"
-    ), c(
-      NA,
-      effect_measure, NA, NA, NA, NA, NA, NA, NA
-    ), c(
-      NA,
-      effect_measure, NA, NA, NA, NA, NA, NA, NA
-    ), c(
-      NA,
-      effect_measure, NA, NA, NA, NA, NA, NA, NA
-    ), stringsAsFactors = FALSE)
+    if (em) {
+      t <- data.frame(c(
+        NA, NA, E1.absent, E1.present, "Multiplicative scale",
+        "RERI"
+      ), c(NA, effect_measure, NA, NA, NA, NA),
+      c(NA, effect_measure, NA, NA, NA, NA), c(
+        NA,
+        effect_measure, NA, NA, NA, NA
+      ),
+      stringsAsFactors = FALSE
+      )
+      names(t) <- c("*", E2.absent, E2.present, WithinStrataEffect1)
 
-    names(t) <- c("*", E2.absent, E2.present, WithinStrataEffect1)
+      t[3, 2] <- paste("1", "[Reference]", sep = " ")
+      t[3, 3] <- paste(d[2, 2], " [", d[2, 3], ", ", d[2, 4], "]", sep = "")
+      t[3, 4] <- paste(d[5, 2], " [", d[5, 3], ", ", d[5, 4], "]", sep = "")
+      t[4, 2] <- paste(d[3, 2], " [", d[3, 3], ", ", d[3, 4], "]", sep = "")
+      t[4, 3] <- paste(d[4, 2], " [", d[4, 3], ", ", d[4, 4], "]", sep = "")
+      t[4, 4] <- paste(d[6, 2], " [", d[6, 3], ", ", d[6, 4], "]", sep = "")
+      t[5, 2] <- paste(d[7, 2], " [", d[7, 3], ", ", d[7, 4], "]", sep = "")
+      t[6, 2] <- paste(d[8, 2], " [", d[8, 3], ", ", d[8, 4], "]", sep = "")
 
-    t[3, 2] <- paste("1", "[Reference]", sep = " ")
-    t[3, 3] <- paste(d[2, 2], " [", d[2, 3], ", ", d[2, 4], "]", sep = "")
-    t[3, 4] <- paste(d[5, 2], " [", d[5, 3], ", ", d[5, 4], "]", sep = "")
-    t[4, 2] <- paste(d[3, 2], " [", d[3, 3], ", ", d[3, 4], "]", sep = "")
-    t[4, 3] <- paste(d[4, 2], " [", d[4, 3], ", ", d[4, 4], "]", sep = "")
-    t[4, 4] <- paste(d[6, 2], " [", d[6, 3], ", ", d[6, 4], "]", sep = "")
-    t[5, 2] <- paste(d[7, 2], " [", d[7, 3], ", ", d[7, 4], "]", sep = "")
-    t[5, 3] <- paste(d[8, 2], " [", d[8, 3], ", ", d[8, 4], "]", sep = "")
-    t[6, 2] <- paste(d[9, 2], " [", d[9, 3], ", ", d[9, 4], "]", sep = "")
-    t[7, 2] <- paste(d[10, 2], " [", d[10, 3], ", ", d[10, 4], "]",
-      sep = ""
-    )
-    t[8, 2] <- paste(d[11, 2], " [", d[11, 3], ", ", d[11, 4], "]",
-      sep = ""
-    )
-    t[9, 2] <- paste(d[12, 2], " [", d[12, 3], ", ", d[12, 4], "]",
-      sep = ""
-    )
 
-    t2 <- flextable(t)
-    t2 <- set_caption(t2, paste("Interaction of", beta1, "and", beta2, sep = " "))
+      t2 <- flextable(t)
+      t2 <- set_caption(t2, paste("Modification of the effect of", beta1, "and", beta2, sep = " "))
+    } else {
+      t <- data.frame(c(
+        NA, NA, E1.absent, E1.present, WithinStrataEffect2,
+        "Multiplicative scale", "RERI", "AP", "SI"
+      ), c(
+        NA,
+        effect_measure, NA, NA, NA, NA, NA, NA, NA
+      ), c(
+        NA,
+        effect_measure, NA, NA, NA, NA, NA, NA, NA
+      ), c(
+        NA,
+        effect_measure, NA, NA, NA, NA, NA, NA, NA
+      ), stringsAsFactors = FALSE)
+
+      names(t) <- c("*", E2.absent, E2.present, WithinStrataEffect1)
+
+      t[3, 2] <- paste("1", "[Reference]", sep = " ")
+      t[3, 3] <- paste(d[2, 2], " [", d[2, 3], ", ", d[2, 4], "]", sep = "")
+      t[3, 4] <- paste(d[5, 2], " [", d[5, 3], ", ", d[5, 4], "]", sep = "")
+      t[4, 2] <- paste(d[3, 2], " [", d[3, 3], ", ", d[3, 4], "]", sep = "")
+      t[4, 3] <- paste(d[4, 2], " [", d[4, 3], ", ", d[4, 4], "]", sep = "")
+      t[4, 4] <- paste(d[6, 2], " [", d[6, 3], ", ", d[6, 4], "]", sep = "")
+      t[5, 2] <- paste(d[7, 2], " [", d[7, 3], ", ", d[7, 4], "]", sep = "")
+      t[5, 3] <- paste(d[8, 2], " [", d[8, 3], ", ", d[8, 4], "]", sep = "")
+      t[6, 2] <- paste(d[9, 2], " [", d[9, 3], ", ", d[9, 4], "]", sep = "")
+      t[7, 2] <- paste(d[10, 2], " [", d[10, 3], ", ", d[10, 4], "]",
+                       sep = ""
+      )
+      t[8, 2] <- paste(d[11, 2], " [", d[11, 3], ", ", d[11, 4], "]",
+                       sep = ""
+      )
+      t[9, 2] <- paste(d[12, 2], " [", d[12, 3], ", ", d[12, 4], "]",
+                       sep = ""
+      )
+
+      t2 <- flextable(t)
+      t2 <- set_caption(t2, paste("Interaction of", beta1, "and", beta2, sep = " "))
+    }
+
   }
 
   if (!is.na(file_path)) {

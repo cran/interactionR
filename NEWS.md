@@ -1,3 +1,8 @@
+interactionR 0.1.3
+==================
+
+*adds optional pvalue outputting feature to the tabling function
+
 interactionR 0.1.2
 ==================
 Patched version
