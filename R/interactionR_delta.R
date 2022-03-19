@@ -33,11 +33,7 @@
 #' @importFrom msm deltamethod
 interactionR_delta <- function(model, exposure_names = c(), ci.level = 0.95, em = T,
                                recode = F) {
-  if (!invalid(model)) {
-    stop("The 'model' argument must be a regression model object fit with glm() and link = 'logit', coxph() or clogit()")
-  } else if (class(exposure_names) != "character") {
-    stop("Argument 'exposure_names' requires a character vector of the names of the two exposure variables ")
-  }
+  check_arguments(model, exposure_names)
 
   # Estimates the critical value from the supplied CI.level for
   # subsequent CI estimations
@@ -48,10 +44,13 @@ interactionR_delta <- function(model, exposure_names = c(), ci.level = 0.95, em 
   # (beta2) and their interaction term
   e1 <- grep(exposure_names[1], names(coef(model)), value = TRUE, ignore.case = TRUE)
   e2 <- grep(exposure_names[2], names(coef(model)), value = TRUE, ignore.case = TRUE)
-  exposure_names <- union(e1, e2)
-  beta1 <- exposure_names[1]
-  beta2 <- exposure_names[3]
-  beta3 <- exposure_names[2]
+  e1_e2 <- intersect(e1,e2)
+  if (length(e1_e2) != 1) {
+    stop("The interaction you specified in your exposure_names argument cannot be found in the model")
+  }
+  beta1 <- e1[1]
+  beta2 <- e2[1]
+  beta3 <- e1_e2[1]
 
   varNames <- c(beta1, beta2, beta3)
 
@@ -65,9 +64,12 @@ interactionR_delta <- function(model, exposure_names = c(), ci.level = 0.95, em 
   # check if any exposure is preventive
   if (preventive(OR10 = exp(b1), OR01 = exp(b2))) {
     if (!recode) {
-      stop("Error: At least one exposure is preventive. Set argument recode=TRUE for the exposures to be automatically recoded. see Knol et al. (2011) European Journal of Epidemiology, 26(6), 433-438")
+      warning("At least one exposure is preventive. Set argument recode=TRUE for the exposures to be automatically recoded. see Knol et al. (2011) European Journal of Epidemiology, 26(6), 433-438")
     }
     if (recode) {
+      if ("coxph" %in% class(model)) {
+        stop("Currently, interactionR() cannot automatically recode models fitted with coxph or clogit. Recode your exposure variables following the examples in Knol et al. (2011) European Journal of Epidemiology, 26(6), 433-438, re-fit your model, and re-run interactionR()")
+      }
       temp <- data.frame(cat = c("OR10", "OR01", "OR11"), value = c(
         exp(b1),
         exp(b2), exp(b1 + b2 + b3)
@@ -78,10 +80,7 @@ interactionR_delta <- function(model, exposure_names = c(), ci.level = 0.95, em 
       E2.ref <- substr(ref.cat, 4, 4)
 
       # extract the raw data that was used to fit the model
-      if (class(model$data) == "environment") {
-        stop("Error: Pass the raw data that you used to fit the model to the 'data' argument of your glm(), clogit(), or coxph() call")
-      }
-      dat.ir <- model$data
+      dat.ir <- model.frame(model)
 
       # recode based on new reference category
       dat.ir[[beta1]] <- ifelse(dat.ir[[beta1]] == E1.ref, 0, 1)
@@ -95,6 +94,7 @@ interactionR_delta <- function(model, exposure_names = c(), ci.level = 0.95, em 
 
       # refit model with user's original call
       model <- update(model, . ~ ., data = dat.ir)
+
       # get new coefficients and ORs
       b1 <- coef(model)[beta1]
       b2 <- coef(model)[beta2]
@@ -103,10 +103,7 @@ interactionR_delta <- function(model, exposure_names = c(), ci.level = 0.95, em 
   }
   #### End of recode section ####
 
-  classes <- c("clogit", "coxph")
-  mod_class <- class(model)[1]
-
-  if (mod_class %in% classes) {
+  if ("coxph" %in% class(model)) {
     se_vec <- summary(model)$coefficients[, 3]
   } else {
     se_vec <- summary(model)$coefficients[, 2]
@@ -117,7 +114,7 @@ interactionR_delta <- function(model, exposure_names = c(), ci.level = 0.95, em 
   v3 <- se_vec[beta3]^2
 
   #Extracts p-values from the model
-  pvals <- summary(model)$coefficients[,'Pr(>|z|)']
+  pvals <- summary(model)$coefficients[,4]
 
   ### Extracts the variance-covariance matrix from the model### for use in
   ### the delta method CI estimation for RERI and AP###

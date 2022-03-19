@@ -15,7 +15,7 @@
 #' Whereas, interaction on the additive scale is more relevant to public health, most authors merely report on the multiplicative scale. The recommendations mentioned above ensures reporting on both scales.
 #'
 #' This function calculates three indices to assess the presence of additive interaction, as defined by Rothman (1998): (1) the relative excess risk due to interaction (RERI), (2) the proportion of disease among those with both exposures that is attributable to their interaction (AP), and (3) the synergy index (SI).
-#' A RERI of one means no interaction or perfect additivity. A RERI of greater than one means positive interaction or more than additivity. A RERI of less than one means negative interaction or less than additivity. RERI ranges from zero to infinity.
+#' A RERI of zero means no interaction or perfect additivity. A RERI of greater than zero means positive interaction or more than additivity. A RERI of less than zero means negative interaction or less than additivity. RERI ranges from zero to infinity.
 #'
 #' An AP of zero means no interaction or perfect additivity. An AP greater than zero means positive interaction or more than additivity. An AP of less than zero means negative interaction or less than additivity. AP ranges from -1 to +1.
 #' The synergy index is the ratio of the combined effects and the individual effects. An SI of one means no interaction or perfect additivity. An SI of greater than one means positive interaction or more than additivity. An SI of less than one means negative interaction or less than additivity. SI ranges from zero to infinity.
@@ -126,11 +126,7 @@
 #' @importFrom msm deltamethod
 interactionR <- function(model, exposure_names = c(), ci.type = "delta", ci.level = 0.95,
                          em = T, recode = F) {
-  if (!invalid(model)) {
-    stop("The 'model' argument must be a regression model object fit with glm(), coxph() or clogit()")
-  } else if (class(exposure_names) != "character") {
-    stop("Argument 'exposure_names' requires a character vector of the names of the two exposure variables ")
-  }
+  check_arguments(model, exposure_names)
 
   # Estimates the critical value from the supplied CI.level for
   # subsequent CI estimations
@@ -141,10 +137,13 @@ interactionR <- function(model, exposure_names = c(), ci.type = "delta", ci.leve
   # (beta2) and their interaction term
   e1 <- grep(exposure_names[1], names(coef(model)), value = TRUE, ignore.case = TRUE)
   e2 <- grep(exposure_names[2], names(coef(model)), value = TRUE, ignore.case = TRUE)
-  exposure_names <- union(e1, e2)
-  beta1 <- exposure_names[1]
-  beta2 <- exposure_names[3]
-  beta3 <- exposure_names[2]
+  e1_e2 <- intersect(e1,e2)
+  if (length(e1_e2) != 1) {
+    stop("The interaction you specified in your exposure_names argument cannot be found in the model")
+  }
+  beta1 <- e1[1]
+  beta2 <- e2[1]
+  beta3 <- e1_e2[1]
 
   varNames <- c(beta1, beta2, beta3)
 
@@ -159,9 +158,12 @@ interactionR <- function(model, exposure_names = c(), ci.type = "delta", ci.leve
   # check if any exposure is preventive
   if (preventive(OR10 = exp(b1), OR01 = exp(b2))) {
     if (!recode) {
-      stop("Error: At least one exposure is preventive. Set argument recode=TRUE for the exposures to be automatically recoded. see Knol et al. (2011) European Journal of Epidemiology, 26(6), 433-438")
+      warning("At least one exposure is preventive. Set argument recode=TRUE for the exposures to be automatically recoded. see Knol et al. (2011) European Journal of Epidemiology, 26(6), 433-438")
     }
     if (recode) {
+      if ("coxph" %in% class(model)) {
+        stop("Currently, interactionR() cannot automatically recode models fitted with coxph or clogit. Recode your exposure variables following the examples in Knol et al. (2011) European Journal of Epidemiology, 26(6), 433-438, re-fit your model, and re-run interactionR()")
+      }
       temp <- data.frame(cat = c("OR10", "OR01", "OR11"), value = c(
         exp(b1),
         exp(b2), exp(b1 + b2 + b3)
@@ -172,10 +174,7 @@ interactionR <- function(model, exposure_names = c(), ci.type = "delta", ci.leve
       E2.ref <- substr(ref.cat, 4, 4)
 
       # extract the raw data that was used to fit the model
-      if (class(model$data) == "environment") {
-        stop("Error: Pass the raw data that you used to fit the model to the 'data' argument of your glm(), clogit(), or coxph() call")
-      }
-      dat.ir <- model$data
+      dat.ir <- model.frame(model)
 
       # recode based on new reference category
       dat.ir[[beta1]] <- ifelse(dat.ir[[beta1]] == E1.ref, 0, 1)
@@ -198,10 +197,7 @@ interactionR <- function(model, exposure_names = c(), ci.type = "delta", ci.leve
   }
   #### End of recode section ####
 
-  classes <- c("clogit", "coxph")
-  mod_class <- class(model)[1]
-
-  if (mod_class %in% classes) {
+  if ("coxph" %in% class(model)) {
     se_vec <- summary(model)$coefficients[, 3]
   } else {
     se_vec <- summary(model)$coefficients[, 2]
@@ -213,7 +209,7 @@ interactionR <- function(model, exposure_names = c(), ci.type = "delta", ci.leve
   v3 <- se_vec[beta3]^2
 
   #Extracts p-values from the model
-  pvals <- summary(model)$coefficients[,'Pr(>|z|)']
+  pvals <- summary(model)$coefficients[,4]
 
   ### Extracts the variance-covariance matrix from the model### for use in
   ### the delta and MOVER method CI estimation for RERI and AP###
