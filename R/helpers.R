@@ -10,10 +10,18 @@ invalid <- function(model) {
 check_arguments <- function(model, exposure_names) {
   if (!invalid(model)) {
     stop("The 'model' argument must be a regression model object fit with glm(), coxph() or clogit()")
-  } else if (class(exposure_names) != "character" || length(exposure_names) != 2) {
+  } else if (!is(exposure_names, "character")  || length(exposure_names) != 2) {
     stop("Argument 'exposure_names' requires a character vector of the names of the two exposure variables")
   } else if (anyNA(match(exposure_names, names(coef(model))))) {
     stop("At least one of the exposure names you have identified cannot be found in your model")
+  }
+}
+
+extract_pvals <- function(model) {
+  if ("glm" %in% class(model)) {
+   return(summary(model)$coefficients[,4])
+  } else {
+   return(summary(model)$coefficients[,5])
   }
 }
 

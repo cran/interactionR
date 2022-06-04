@@ -1,7 +1,7 @@
 Package: interactionR
 Type: Package
 Title: Full Reporting of Interaction Analyses
-Version: 0.1.5
+Version: 0.1.6
 Author: Babatunde Alli
 Maintainer: Babatunde Alli <babatunde.alli@mail.mcgill.ca>
 Description: Produces a publication-ready table that includes all effect estimates necessary for full reporting effect modification and interaction analysis as recommended by Knol and Vanderweele (2012) [<doi:10.1093/ije/dyr218>].
@@ -16,6 +16,6 @@ BugReports: https://github.com/epi-zen/interactionR/issues
 Suggests: testthat (>= 2.1.0)
 Depends: R (>= 2.10)
 NeedsCompilation: no
-Packaged: 2022-03-20 16:28:58 UTC; tunsm
+Packaged: 2022-06-04 18:14:14 UTC; tunsm
 Repository: CRAN
-Date/Publication: 2022-03-22 13:10:02 UTC
+Date/Publication: 2022-06-04 18:30:02 UTC
