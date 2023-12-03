@@ -1,6 +1,6 @@
 # About interactionR
 
-[![R-CMD-check](https://github.com/epi-zen/interactionR/actions/workflows/check-standard.yaml/badge.svg)](https://github.com/epi-zen/interactionR/actions/workflows/check-standard.yaml)
+[![R-CMD-check](https://github.com/tunsmart/interactionR/actions/workflows/check-standard.yaml/badge.svg)](https://github.com/tunsmart/interactionR/actions/workflows/check-standard.yaml)
 [![](https://www.r-pkg.org/badges/version/interactionR)](https://cran.r-project.org/package=interactionR)
 ![Downloads](https://cranlogs.r-pkg.org/badges/interactionR)
 [![](http://cranlogs.r-pkg.org/badges/grand-total/interactionR)](https://cran.r-project.org/package=interactionR)
@@ -23,11 +23,11 @@ interactionR is on
 `install.packages("interactionR")`.
 
 You can also install the development version from
-[GitHub](https://github.com/epi-zen/interactionR) with:
+[GitHub](https://github.com/tunsmart/interactionR) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("epi-zen/interactionR")
+devtools::install_github("tunsmart/interactionR")
 ```
 
 # Implementation
@@ -197,7 +197,7 @@ both development and releases.
 ### To report problems, bugs or issues
 
 Please use [interactionR
-issues](https://github.com/epi-zen/interactionR/issues) here on Github.
+issues](https://github.com/tunsmart/interactionR/issues) here on Github.
 
 ### To get support
 
